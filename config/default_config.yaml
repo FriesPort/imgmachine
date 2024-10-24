@@ -1,0 +1,28 @@
+display_label_popup: true
+store_data: true
+keep_prev: false
+logger_level: info
+
+
+file_search: null
+
+
+ai:
+  default: 'ai'
+
+# main
+file_dock:
+  show: true
+  closable: false
+  movable: true
+  floatable: true
+
+# canvas
+epsilon: 10.0
+
+login:
+  username: [
+    "admin",
+  ]
+
+
