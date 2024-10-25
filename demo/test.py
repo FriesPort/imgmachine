@@ -95,4 +95,4 @@ best="../check/best.pt"
 detection = model.predict(path, img_path, save=True, imgsz=640, line_width=1, show_conf=False)
 i=1
 print(detection)
-judge.ngJudge(path,img_path,best)
+print(db.znzz_List())

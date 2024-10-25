@@ -64,7 +64,7 @@ def ngJudge(path,imgPath,best):
             'machine_check_result': machine_check,
             'absolute_path': result.path,
             'detected_part_type': type,
-            'result_path': './result'
+            'result_path': './result/'+file_name
         }
         Item.append(saveItems)
         cv2.namedWindow("result", cv2.WINDOW_NORMAL)

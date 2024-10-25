@@ -6,6 +6,13 @@ class znzz_SQLiteConnection:
     def __init__(self):
         self.connection = None
 
+    def znzz_List(self):
+        with znzz_SQLiteConnection.connect(self) as db:
+            cursor = db.cursor()
+            cursor.execute("select absolute_path from checklist")
+            result = cursor.fetchall()
+            return result
+
     def znzz_check(self,current_image_path,status):
         with znzz_SQLiteConnection.connect(self) as db:
             cursor = db.cursor()
@@ -88,7 +95,7 @@ class znzz_SQLiteConnection:
                     machine_check_result = item.get('machine_check_result')
                     absolute_path = item.get('absolute_path')
                     detected_part_type = item.get('detected_part_type')
-                    result_path = item.get('absolute_path')
+                    result_path = item.get('result_path')
 
                     #查看是否已经存在该路径的记录
                     cursor.execute("SELECT * FROM checklist WHERE absolute_path=?", (absolute_path,))
@@ -97,8 +104,8 @@ class znzz_SQLiteConnection:
                         #如果存在则更新记录
                         updated_by = user[1]
                         updated_time = datetime.datetime.now()
-                        cursor.execute("UPDATE checklist SET error_count=?, machine_check_result=?, detected_part_type=?, updated_by=?, updated_time=? WHERE absolute_path=?",
-                                       (error_count, machine_check_result, detected_part_type, updated_by, updated_time, absolute_path))
+                        cursor.execute("UPDATE checklist SET error_count=?, machine_check_result=?, detected_part_type=?, updated_by=?, updated_time=?, result_path=? WHERE absolute_path=?",
+                                       (error_count, machine_check_result, detected_part_type, updated_by, updated_time, result_path,absolute_path))
                     else:
                         #如果不存在
                         created_by = user[1]
