@@ -9,7 +9,7 @@ class znzz_SQLiteConnection:
     def znzz_List(self):
         with znzz_SQLiteConnection.connect(self) as db:
             cursor = db.cursor()
-            cursor.execute("select absolute_path from checklist")
+            cursor.execute("select result_path from checklist")
             result = cursor.fetchall()
             return result
 
