@@ -38,11 +38,9 @@ class MainWindow(QMainWindow):
 
         # 数据展示栏
         self.znzz_dataShow_List = QListWidget()
-        #self.znzz_dataShow_List.itemSelectionChanged.connect()
         self.znzz_dataShow_List.setObjectName("数据展示")
         self.znzz_dataShow_List.setToolTip("数据展示")
         self.znzz_dataShow_dock = QDockWidget()
-        self.znzz_dataShow_List = QListWidget()
 
         self.znzz_dataShow_dock.setObjectName("数据展示窗口")
         self.znzz_dataShow_dock.setWidget(self.znzz_dataShow_List)
@@ -170,6 +168,7 @@ class MainWindow(QMainWindow):
         self.otherData = None
         self.zoom_level = 100
         self.zoom_values = {}
+        self.dataList = None
         self.zoomMode = self.FIT_WINDOW
         self.scroll_values = {
             Qt.Vertical: {},
@@ -184,7 +183,7 @@ class MainWindow(QMainWindow):
         self.znzz_zoomWidget.setEnabled(False)
         self.znzz_zoomWidget.valueChanged.connect(self.paintCanvas)
         #self.queueEvent(functools.partial(self.loadFile, self.znzz_filename))
-
+        self.znzz_firstOpen_DataList()
     # def queueEvent(self, func):
     #     QtCore.QTimer.singleShot(0, func)
     def status(self, message, delay=2000):
@@ -230,17 +229,19 @@ class MainWindow(QMainWindow):
     def znzz_imgqualified(self):
         self.znzz_nextImg()
         # 假设此处可以获取当前正在处理的图像的绝对路径
-        current_image_path = self.get_current_image_path()
+        current_image_path = self.znzz_filename
         db=dbconnection.znzz_SQLiteConnection()
         db.znzz_check(current_image_path,"OK")
+        self.znzz_updateDataList(current_image_path)
         self.status("检测结果为正确，已存储")
     #不合格
     def znzz_imgunqualified(self):
         self.znzz_nextImg()
         # 假设此处可以获取当前正在处理的图像的绝对路径
-        current_image_path = self.get_current_image_path()
+        current_image_path = self.znzz_filename
         db=dbconnection.znzz_SQLiteConnection()
         db.znzz_check(current_image_path,"NG")
+        self.znzz_updateDataList(current_image_path)
         self.status("检测结果为错误")
 
     def znzz_nextImg(self):
@@ -248,6 +249,17 @@ class MainWindow(QMainWindow):
 
     def znzz_prevImg(self):
         self.znzz_selectImg(prev=True)
+
+    def znzz_firstOpen_DataList(self):
+        db = dbconnection.znzz_SQLiteConnection()
+        self.dataList = db.znzz_List()
+        for item in self.dataList:
+            self.znzz_dataShow_List.addItem(str(item))
+        self.znzz_dataShow_List.scrollToBottom()
+    def znzz_updateDataList(self,current_image_path):
+        self.dataList.append(current_image_path)
+        self.znzz_dataShow_List.addItem(current_image_path)
+        self.znzz_dataShow_List.scrollToBottom()
 
     def znzz_selectImg(self, load=True, next=False, prev=False):
         lst = self.imageList()
@@ -286,6 +298,7 @@ class MainWindow(QMainWindow):
             znzz_filename = lst[currIndex]
             if znzz_filename:
                 self.loadFile(znzz_filename)
+
 
     def scrollRequese(self, delta, orientation):
         units = -delta * 0.1
