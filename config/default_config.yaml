@@ -1,28 +1,17 @@
+ai:
+  default: ai
 display_label_popup: true
-store_data: true
+epsilon: 10.0
+file_dock:
+  closable: false
+  floatable: true
+  movable: true
+  show: true
+file_search: null
 keep_prev: false
 logger_level: info
-
-
-file_search: null
-
-
-ai:
-  default: 'ai'
-
-# main
-file_dock:
-  show: true
-  closable: false
-  movable: true
-  floatable: true
-
-# canvas
-epsilon: 10.0
-
 login:
-  username: [
-    "admin",
-  ]
-
-
+  username:
+  - admin
+  - dd
+store_data: true

@@ -4,7 +4,7 @@ from PySide6.QtCore import *
 from PySide6.QtGui import *
 import sys
 from PySide6.QtWidgets import *
-from utils import dbconnection
+from demo.utils import dbconnection
 
 from config import *
 from app import MainWindow
@@ -87,13 +87,24 @@ class LoginWindow(QMainWindow):
         return znzz_login
 
     def znzz_store_user(self, username):
-        with open("default_config.yaml", 'r') as file:
-            data = yaml.safe_load(file)
-        if data == None:
+        # 获取当前的配置
+        config = get_default_config()
+        if config is None:
             return False
-        print(data)
-        data['login']['user'] = [username]
 
-        # 写入YAML文件
-        with open("default_config.yaml", "w") as file:
-            yaml.dump(data, file, default_flow_style=False)
+        # 确保 'login' 键存在，并且 'username' 键是一个列表
+        if 'login' not in config:
+            config['login'] = {}
+        if 'username' not in config['login'] or not isinstance(config['login']['username'], list):
+            config['login']['username'] = []
+
+        # 追加新用户名，如果它还不在列表中
+        if username not in config['login']['username']:
+            config['login']['username'].append(username)
+
+        # 将更新后的配置写回到配置文件中
+        config_file = osp.join(here, "default_config.yaml")
+        with open(config_file, "w") as file:
+            yaml.dump(config, file, default_flow_style=False)
+
+        return True

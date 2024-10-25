@@ -18,7 +18,7 @@ from demo import utils
 from demo.wigets.zoom_widget import ZoomWidget
 from demo.wigets.tool_Bar import ToolBar
 from demo.wigets.canvas import Canvas
-from utils import dbconnection
+from demo.utils import dbconnection
 from check import judge
 from ultralytics import YOLO
 
@@ -37,12 +37,15 @@ class MainWindow(QMainWindow):
         self.setWindowTitle(__appname__)
 
         # 数据展示栏
-        self.znzz_dataShow = QListWidget()
-        self.znzz_dataShow.setObjectName("数据展示")
-
+        self.znzz_dataShow_List = QListWidget()
+        #self.znzz_dataShow_List.itemSelectionChanged.connect()
+        self.znzz_dataShow_List.setObjectName("数据展示")
+        self.znzz_dataShow_List.setToolTip("数据展示")
         self.znzz_dataShow_dock = QDockWidget()
+        self.znzz_dataShow_List = QListWidget()
+
         self.znzz_dataShow_dock.setObjectName("数据展示窗口")
-        self.znzz_dataShow_dock.setWidget(self.znzz_dataShow)
+        self.znzz_dataShow_dock.setWidget(self.znzz_dataShow_List)
 
         self.addDockWidget(Qt.LeftDockWidgetArea, self.znzz_dataShow_dock)
         self.znzz_zoomWidget = ZoomWidget()
@@ -61,10 +64,10 @@ class MainWindow(QMainWindow):
         # 将 QScrollArea 设置为中心部件
         self.setCentralWidget(scrollArea)
         # 侧边窗口-员工信息
-        self.znzz_employeeMes_list = QListWidget()
-        self.znzz_employeeMes_dock = QDockWidget(self)
-        self.znzz_employeeMes_dock.setObjectName("员工信息")
-        self.znzz_employeeMes_dock.setWidget(self.znzz_employeeMes_list)
+        # self.znzz_employeeMes_list = QListWidget()
+        # self.znzz_employeeMes_dock = QDockWidget(self)
+        # self.znzz_employeeMes_dock.setObjectName("员工信息")
+        # self.znzz_employeeMes_dock.setWidget(self.znzz_employeeMes_list)
 
         # 侧边窗口-文件
         self.znzz_file_dock = QDockWidget(self)
@@ -86,7 +89,7 @@ class MainWindow(QMainWindow):
         self.znzz_file_dock.setWidget(znzz_fileWid)
 
         # 窗口添加到右侧
-        self.addDockWidget(Qt.RightDockWidgetArea, self.znzz_employeeMes_dock)
+        #self.addDockWidget(Qt.RightDockWidgetArea, self.znzz_employeeMes_dock)
         self.addDockWidget(Qt.RightDockWidgetArea, self.znzz_file_dock)
 
         self.status("%s 启动成功" % __appname__)
@@ -270,6 +273,19 @@ class MainWindow(QMainWindow):
                 return
         if self.znzz_filename and load:
             self.loadFile(self.znzz_filename)
+    def fileSelectionChanged(self):
+        items = self.znzz_fileList_list.selectedItems()
+        if not items:
+            return
+        item = items[0]
+
+        lst = self.imageList()
+
+        currIndex = lst.index(str(item.text()))
+        if currIndex < len(lst):
+            znzz_filename = lst[currIndex]
+            if znzz_filename:
+                self.loadFile(znzz_filename)
 
     def scrollRequese(self, delta, orientation):
         units = -delta * 0.1
@@ -474,19 +490,7 @@ class MainWindow(QMainWindow):
         text = self.znzz_fileSearch_lineEdit.text()
         self.znzz_importDirImages(self.lastOpenDir, pattern=text, load=False)
 
-    def fileSelectionChanged(self):
-        items = self.znzz_fileList_list.selectedItems()
-        if not items:
-            return
-        item = items[0]
 
-        lst = self.imageList()
-
-        currIndex = lst.index(str(item.text()))
-        if currIndex < len(lst):
-            znzz_filename = lst[currIndex]
-            if znzz_filename:
-                self.loadFile(znzz_filename)
 
     def errorMessage(self, title, message):
         return QtWidgets.QMessageBox.critical(
