@@ -4,7 +4,7 @@ import cv2
 from demo.utils import dbconnection
 
 # 判断是否通过
-def ngJudge(path,imgPath,best):
+def ngJudge(path, imgPath, best):
     model=YOLO(best)
     results = model.predict(source=path, save=True, imgsz=640, line_width=1, show_conf=False)
     Item=[]

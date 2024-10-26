@@ -152,17 +152,24 @@ class MainWindow(QMainWindow):
             self.opendir,
             icon="open"
         )
+        znzz_choosePreHandledir = znzz_action(
+            "选择待训练文件夹",
+            self.choosePreHandleDir,
+            icon="open"
+        )
         utils.addActions(
             self.znzz_menus.file,
             (
                 znzz_open,
-                znzz_opendir
+                znzz_opendir,
+                znzz_choosePreHandledir
             )
         )
         # 参数初始化
 
         self.lastOpenDir = None
         self.opendDir = None
+        self.preHandleDir = None
         self.image = QtGui.QImage()
         self.imagePath = None
         self.otherData = None
@@ -475,8 +482,7 @@ class MainWindow(QMainWindow):
             znzz_filename = fileDialog.selectedFiles()[0]
             if znzz_filename:
                 self.loadFile(znzz_filename)
-
-    def opendir(self):
+    def dirBar(self):
         if self.lastOpenDir and osp.exists(self.lastOpenDir):
             defaultOpenDir = self.lastOpenDir
         else:
@@ -490,8 +496,18 @@ class MainWindow(QMainWindow):
                 | QtWidgets.QFileDialog.DontResolveSymlinks,
             )
         )
+        return targetDirPath
+    def opendir(self):
+        targetDirPath = self.dirBar()
         self.opendDir = targetDirPath
         self.znzz_importDirImages(targetDirPath)
+    def choosePreHandleDir(self):
+        targetDirPath = self.dirBar()
+        self.preHandleDir = targetDirPath
+        if self.preHandleDir is None:
+            self.status("所选文件夹无效")
+            return
+        self.AppController()
 
     def znzz_menu(self, title, actions=None):
         znzz_menu = self.menuBar().addMenu(title)
@@ -513,7 +529,8 @@ class MainWindow(QMainWindow):
     #获取绝对路径
     def znzz_getFilePath(self):
         self.znzz_canvas.update()
-        znzz_filepath_list=self.znzz_scanAllImages(self)
+        preHandleDir = self.preHandleDir
+        znzz_filepath_list=self.znzz_scanAllImages(preHandleDir)
         print(znzz_filepath_list)
         return znzz_filepath_list
 
@@ -526,16 +543,13 @@ class MainWindow(QMainWindow):
     '''
     def AppController(self):
         self.znzz_createTable()
-        znzz_fileList=self.znzz_getFilePath()
-        znzz_checkResult=None
-        path = "../check/83_0_15.jpg"
+        znzz_fileList=self.znzz_getFilePath() #选定文件夹下的所有图片
         img_path="./runs/detect/predict/"
         best="../check/best.pt"
         if znzz_fileList is not None:
             #TODO 调用算法模块，传入路径集合,给znzz_checkResult赋值
-            path=self.opendDir
-            judge.ngJudge(path,img_path,best)
-
+            path = self.preHandleDir #文件夹绝对路径
+            judge.ngJudge(path, img_path, best)
         elif znzz_fileList is None:
             return '获取图片的绝对路径为NULL'
 
