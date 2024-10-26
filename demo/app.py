@@ -230,8 +230,8 @@ class MainWindow(QMainWindow):
         self.znzz_nextImg()
         # 假设此处可以获取当前正在处理的图像的绝对路径
         current_image_path = self.znzz_filename
-        db=dbconnection.znzz_SQLiteConnection()
-        db.znzz_check(current_image_path,"OK")
+        db = dbconnection.znzz_SQLiteConnection()
+        db.znzz_check(current_image_path, "OK")
         self.znzz_updateDataList(current_image_path)
         self.status("检测结果为正确，已存储")
     #不合格
