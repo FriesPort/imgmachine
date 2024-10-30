@@ -71,9 +71,9 @@ def ngJudge(path, imgPath, best, userId):
         }
         resultPath.append('./result/'+file_name)
         Item.append(saveItems)
-        cv2.namedWindow("result", cv2.WINDOW_NORMAL)
+
         cv2.imwrite(save_path + "/" + file_name, new_img)
-        #cv2.imshow("result", new_img)
+
         cv2.waitKey(0)
         cv2.destroyAllWindows()
     db=dbconnection.znzz_SQLiteConnection()

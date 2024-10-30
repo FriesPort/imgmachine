@@ -40,14 +40,6 @@ class Canvas(QWidget):
         self.setFocusPolicy(Qt.WheelFocus)
         self._ai_model = None
 
-    def initializeAiModel(self, name):
-        if name not in [model.name for model in demo.ai.MODELS]:
-            raise ValueError(f"Unsupported ai model: {name}")
-        model = [model for model in demo.ai.MODELS if model.name == name][0]
-        self._ai_model.set_image(
-            image=demo.utils.img_qt_to_arr(self.pixmap.toImage())
-        )
-
     def drawing(self):
         return self.mode == self.CREATE
 
@@ -83,7 +75,6 @@ class Canvas(QWidget):
             menu = self.menus
             self.restoreCursor()
             if not menu.exec(self.mapToGlobal(ev.position().toPoint())):
-                self.selectedShapesCopy = []
                 self.repaint()
 
     def setHiding(self, enable=True):
