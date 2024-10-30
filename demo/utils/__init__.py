@@ -5,9 +5,6 @@ from .qt import newAction
 from .qt import addActions
 from .qt import labelValidator
 from .qt import struct
-from .qt import distance
-from .qt import distancetoline
-from .qt import fmtShortcut
 
 from .image import apply_exif_orientation
 from .image import img_arr_to_b64

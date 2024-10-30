@@ -18,7 +18,9 @@ from demo import utils
 from demo.wigets.zoom_widget import ZoomWidget
 from demo.wigets.tool_Bar import ToolBar
 from demo.wigets.canvas import Canvas
+from demo.wigets.logger import Logger
 from demo.utils import dbconnection
+from demo.utils.toolBar import ToolBar
 from check import judge
 from ultralytics import YOLO
 
@@ -26,9 +28,11 @@ from ultralytics import YOLO
 class MainWindow(QMainWindow):
     FIT_WINDOW, FIT_WIDTH, MANUAL_ZOOM = 0, 1, 2
     def __init__(self, znzz_config=None, znzz_filename=None):
+        #初始化构造
         if znzz_config is None:
             znzz_config = get_config()
         self._config = znzz_config
+        #加载默认文件
         if znzz_filename is not None and osp.isdir(znzz_filename):
             self.znzz_importDirImages(znzz_filename, load=False)
         else:
@@ -40,13 +44,21 @@ class MainWindow(QMainWindow):
         self.znzz_dataShow_List = QListWidget()
         self.znzz_dataShow_List.setObjectName("数据展示")
         self.znzz_dataShow_List.setToolTip("数据展示")
+        #数据栏窗口
         self.znzz_dataShow_dock = QDockWidget()
-
         self.znzz_dataShow_dock.setObjectName("数据展示窗口")
         self.znzz_dataShow_dock.setWidget(self.znzz_dataShow_List)
+        self.znzz_dataShow_dock.setWindowTitle("数据库信息展示窗口")
 
-        self.addDockWidget(Qt.LeftDockWidgetArea, self.znzz_dataShow_dock)
+        #窗口缩放
         self.znzz_zoomWidget = ZoomWidget()
+
+        #中心布局
+        self.znzz_mainWidget = QWidget()
+        centerLayout = QVBoxLayout()
+        self.znzz_mainWidget.setLayout(centerLayout)
+        self.setCentralWidget(self.znzz_mainWidget)
+
         # 创建 Canvas 实例
         self.znzz_canvas = Canvas()
         self.znzz_canvas.zoomRequest.connect(self.zoomRequest)
@@ -59,22 +71,27 @@ class MainWindow(QMainWindow):
             Qt.Horizontal: scrollArea.horizontalScrollBar(),
         }
         self.znzz_canvas.scrollRequest.connect(self.scrollRequese)
-        # 将 QScrollArea 设置为中心部件
-        self.setCentralWidget(scrollArea)
-        # 侧边窗口-员工信息
-        # self.znzz_employeeMes_list = QListWidget()
-        # self.znzz_employeeMes_dock = QDockWidget(self)
-        # self.znzz_employeeMes_dock.setObjectName("员工信息")
-        # self.znzz_employeeMes_dock.setWidget(self.znzz_employeeMes_list)
 
+        # 操作栏
+        self.znzz_operationBar = self.toolbar("操作")
+        # 日志
+        self.znzz_logger = Logger()
+        self.znzz_logger.setFixedHeight(150)
+        # 侧边窗口-员工信息
+        self.znzz_employeeMes_list = QListWidget()
+        self.znzz_employeeMes_dock = QDockWidget(self)
+        self.znzz_employeeMes_dock.setFixedHeight(150)
+        self.znzz_employeeMes_dock.setObjectName("员工信息")
+        self.znzz_employeeMes_dock.setWidget(self.znzz_employeeMes_list)
+        self.znzz_employeeMes_dock.setWindowTitle("人员信息")
         # 侧边窗口-文件
         self.znzz_file_dock = QDockWidget(self)
         self.znzz_file_dock.setObjectName("文件")
-
+        self.znzz_file_dock.setWindowTitle("图片文件")
         self.znzz_fileSearch_lineEdit = QLineEdit()
         self.znzz_fileSearch_lineEdit.setPlaceholderText("搜索文件")
         self.znzz_fileSearch_lineEdit.textChanged.connect(self.fileSearch)
-
+        # 文件列表
         self.znzz_fileList_list = QListWidget()
         self.znzz_fileList_list.itemSelectionChanged.connect(self.fileSelectionChanged)
         znzz_fileLayout = QVBoxLayout()
@@ -84,18 +101,27 @@ class MainWindow(QMainWindow):
         znzz_fileLayout.addWidget(self.znzz_fileList_list)
         znzz_fileWid = QWidget()
         znzz_fileWid.setLayout(znzz_fileLayout)
+
         self.znzz_file_dock.setWidget(znzz_fileWid)
 
-        # 窗口添加到右侧
-        #self.addDockWidget(Qt.RightDockWidgetArea, self.znzz_employeeMes_dock)
-        self.addDockWidget(Qt.RightDockWidgetArea, self.znzz_file_dock)
+        # 添加窗口
+        self.addDockWidget(Qt.LeftDockWidgetArea, self.znzz_file_dock)
+        self.addDockWidget(Qt.RightDockWidgetArea, self.znzz_employeeMes_dock)
+        self.addDockWidget(Qt.RightDockWidgetArea, self.znzz_dataShow_dock)
 
         self.status("%s 启动成功" % __appname__)
         self.statusBar().show()
 
         self.resize(QSize(1500, 1000))
 
+        centerLayout.addWidget(self.znzz_operationBar)
+        centerLayout.addWidget(scrollArea)
+
+        centerLayout.addWidget(self.znzz_logger)
+        #初始化视图菜单
+        self.znzz_View = self.znzz_menu("视图")
         znzz_action = functools.partial(utils.newAction, self)
+        #各组件初始化
         znzz_imgqualified = znzz_action(
             "合格",
             self.znzz_imgqualified,
@@ -120,12 +146,33 @@ class MainWindow(QMainWindow):
             icon="next",
             enabled=False
         )
-
+        znzz_open = znzz_action(
+            "打开文件",
+            self.openFile,
+        )
+        znzz_opendir = znzz_action(
+            "打开文件夹",
+            self.opendir,
+        )
+        znzz_choosePreHandledir = znzz_action(
+            "选择待训练文件夹",
+            self.znzz_choosePreHandleDir,
+        )
+        znzz_quit = znzz_action(
+            "退出",
+            self.znzz_quit
+        )
+        #加载组件
         self.actions = utils.struct(
             znzz_nextImg=znzz_nextImg,
             znzz_prevImg=znzz_prevImg,
             znzz_imgunqualified=znzz_imgunqualified,
             znzz_imgqualified=znzz_imgqualified,
+            znzz_open = znzz_open,
+            znzz_opendir = znzz_opendir,
+            znzz_choosePreHandledir = znzz_choosePreHandledir,
+            znzz_quit = znzz_quit,
+            znzz_View = (),
             znzz_menu=(
                 znzz_imgqualified,
                 znzz_imgunqualified,
@@ -133,45 +180,53 @@ class MainWindow(QMainWindow):
                 znzz_prevImg,
                 znzz_nextImg
             ),
+            znzz_operationBar=(
+                znzz_open,
+                None,
+                znzz_opendir,
+                None,
+                znzz_choosePreHandledir,
+                None,
+                znzz_quit,
+                None
+            )
         )
+        #为画布添加上下文菜单
         utils.addActions(
             self.znzz_canvas.menus,
             self.actions.znzz_menu
         )
-
-        self.znzz_menus = utils.struct(
-            file=self.znzz_menu("文件"),
-        )
-        znzz_open = znzz_action(
-            "打开文件",
-            self.openFile,
-            icon="open"
-        )
-        znzz_opendir = znzz_action(
-            "打开文件夹",
-            self.opendir,
-            icon="open"
-        )
-        znzz_choosePreHandledir = znzz_action(
-            "选择待训练文件夹",
-            self.choosePreHandleDir,
-            icon="open"
-        )
+        #为视图添加上下文菜单
         utils.addActions(
-            self.znzz_menus.file,
-            (
-                znzz_open,
-                znzz_opendir,
-                znzz_choosePreHandledir
-            )
+         self.znzz_View,
+         (
+             self.znzz_file_dock.toggleViewAction(),
+             self.znzz_employeeMes_dock.toggleViewAction(),
+             self.znzz_dataShow_dock.toggleViewAction()
+         )
+        )
+        #添加操作栏
+        utils.addActions(
+            self.znzz_operationBar,
+            self.actions.znzz_operationBar
         )
         # 参数初始化
 
+        #记录上依次打开文件夹
         self.lastOpenDir = None
+        # 选定的文件夹
         self.opendDir = None
+        #预处理文件夹
         self.preHandleDir = None
+        #当前图片
         self.image = QtGui.QImage()
         self.imagePath = None
+        # 图片文件名
+        self.imagesNameLst = None
+        # 图片绝对路径名
+        self.imagesLst = None
+        #检测人
+        self.currentDetector = None
         self.otherData = None
         self.zoom_level = 100
         self.zoom_values = {}
@@ -186,13 +241,12 @@ class MainWindow(QMainWindow):
             self.znzz_importDirImages(znzz_filename, load=False)
         else:
             self.znzz_filename = znzz_filename
+        #加载配置
         self.settings = QtCore.QSettings("demo", "demo")
+        #缩放窗口初始化
         self.znzz_zoomWidget.setEnabled(False)
         self.znzz_zoomWidget.valueChanged.connect(self.paintCanvas)
-        #self.queueEvent(functools.partial(self.loadFile, self.znzz_filename))
         self.znzz_firstOpen_DataList()
-    # def queueEvent(self, func):
-    #     QtCore.QTimer.singleShot(0, func)
     def status(self, message, delay=2000):
         self.statusBar().showMessage(message, delay)
 
@@ -223,12 +277,13 @@ class MainWindow(QMainWindow):
         ]
         images = []
         for root, dirs, files in os.walk(folderPath):
+            self.imagesNameLst = files
             for file in files:
                 if file.lower().endswith(tuple(extensions)):
                     relativePath = os.path.normpath(osp.join(root, file))
+
                     images.append(relativePath)
         images = natsort.os_sorted(images)
-
         return images
 
     # 人工检测合格
@@ -239,7 +294,10 @@ class MainWindow(QMainWindow):
         current_image_path = self.znzz_filename
         db = dbconnection.znzz_SQLiteConnection()
         db.znzz_check(current_image_path, "OK")
-        self.znzz_updateDataList(current_image_path)
+        index = self.znzz_fileList_list.currentRow()
+        #self.znzz_updateDataList(current_image_path)
+        self.znzz_updateDataList(self.imagesNameLst[index])
+        self.znzz_logger.add_log(self.currentDetector, self.imagesNameLst[index],"OK")
         self.status("检测结果为正确，已存储")
     #不合格
     def znzz_imgunqualified(self):
@@ -248,7 +306,10 @@ class MainWindow(QMainWindow):
         current_image_path = self.znzz_filename
         db=dbconnection.znzz_SQLiteConnection()
         db.znzz_check(current_image_path,"NG")
-        self.znzz_updateDataList(current_image_path)
+        index = self.znzz_fileList_list.currentRow()
+        # self.znzz_updateDataList(current_image_path)
+        self.znzz_updateDataList(self.imagesNameLst[index])
+        self.znzz_logger.add_log(self.currentDetector, self.imagesNameLst[index], "NG")
         self.status("检测结果为错误")
 
     def znzz_nextImg(self):
@@ -261,11 +322,12 @@ class MainWindow(QMainWindow):
         db = dbconnection.znzz_SQLiteConnection()
         self.dataList = db.znzz_List()
         for item in self.dataList:
-            self.znzz_dataShow_List.addItem(str(item))
+            self.znzz_dataShow_List.addItem(str(item[0]))
         self.znzz_dataShow_List.scrollToBottom()
     def znzz_updateDataList(self,current_image_path):
         self.dataList.append(current_image_path)
-        self.znzz_dataShow_List.addItem(current_image_path)
+        relativePath = r'./result/'.join(current_image_path)
+        self.znzz_dataShow_List.addItem(relativePath)
         self.znzz_dataShow_List.scrollToBottom()
 
     def znzz_selectImg(self, load=True, next=False, prev=False):
@@ -309,6 +371,8 @@ class MainWindow(QMainWindow):
 
     def scrollRequese(self, delta, orientation):
         units = -delta * 0.1
+        if not orientation:
+            return
         bar = self.znzz_scrollBars[orientation]
         value = bar.value() + bar.singleStep() * units
         self.setScroll(orientation, value)
@@ -482,7 +546,7 @@ class MainWindow(QMainWindow):
             znzz_filename = fileDialog.selectedFiles()[0]
             if znzz_filename:
                 self.loadFile(znzz_filename)
-    def dirBar(self):
+    def znzz_dirBar(self):
         if self.lastOpenDir and osp.exists(self.lastOpenDir):
             defaultOpenDir = self.lastOpenDir
         else:
@@ -498,17 +562,29 @@ class MainWindow(QMainWindow):
         )
         return targetDirPath
     def opendir(self):
-        targetDirPath = self.dirBar()
+        targetDirPath = self.znzz_dirBar()
         self.opendDir = targetDirPath
         self.znzz_importDirImages(targetDirPath)
-    def choosePreHandleDir(self):
-        targetDirPath = self.dirBar()
+    def znzz_choosePreHandleDir(self):
+        targetDirPath = self.znzz_dirBar()
         self.preHandleDir = targetDirPath
         if self.preHandleDir is None:
             self.status("所选文件夹无效")
             return
         self.AppController()
+    def znzz_quit(self):
+        # 创建一个 QMessageBox 对象，设置为警告类型
+        reply = QMessageBox.question(self, '退出',
+                                     '确定要退出吗？',
+                                     QMessageBox.Yes | QMessageBox.No,
+                                     QMessageBox.No
+                                     )
 
+        # 如果用户点击了"Yes"按钮，则继续退出
+        if reply == QMessageBox.Yes:
+            self.close()
+        else:
+            return
     def znzz_menu(self, title, actions=None):
         znzz_menu = self.menuBar().addMenu(title)
         if actions:
@@ -579,5 +655,19 @@ class MainWindow(QMainWindow):
                 cursor.execute(znzz_create_table_sql)
                 db.commit()
                 cursor.close()
+    def toolbar(self, title, actions=None,vertical=None):
+        # 创建一个新的工具栏对象，title 参数是工具栏的标题。
+        toolbar = ToolBar(title)
+        toolbar.setStyleSheet("QToolBar { background-color: white; }")
+        # 给工具栏设置一个对象名称，这通常用于在应用程序中唯一标识这个工具栏。
+        toolbar.setObjectName("%sToolBar" % title)
+        # 设置工具栏的方向为水平
+        if vertical is not None:
+            toolbar.setOrientation(Qt.Vertical)
+        toolbar.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
 
+        # 如果提供了 actions 参数（一个动作列表），则将这些动作添加到工具栏中
+        if actions:
+            utils.addActions(toolbar, actions)
+        return toolbar
 
