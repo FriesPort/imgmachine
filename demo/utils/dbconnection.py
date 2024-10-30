@@ -89,7 +89,7 @@ class znzz_SQLiteConnection:
                 db.commit()
             cursor.execute("SELECT id FROM user where username=? and password=?", (znzz_username,znzz_password))
             user=cursor.fetchone()
-            if cursor.fetchone():
+            if user:
                 cursor.close()
                 return user[0]
             else:
