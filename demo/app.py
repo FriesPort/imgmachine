@@ -547,9 +547,10 @@ class MainWindow(QMainWindow):
         img_path="./runs/detect/predict/"
         best="../check/best.pt"
         if znzz_fileList is not None:
-            #TODO 调用算法模块，传入路径集合,给znzz_checkResult赋值
             path = self.preHandleDir #文件夹绝对路径
-            judge.ngJudge(path, img_path, best)
+            path = judge.ngJudge(path, img_path, best)
+            db=dbconnection.znzz_SQLiteConnection()
+            db.znzz_logList(path)
         elif znzz_fileList is None:
             return '获取图片的绝对路径为NULL'
 

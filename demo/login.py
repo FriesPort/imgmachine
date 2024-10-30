@@ -70,6 +70,7 @@ class LoginWindow(QMainWindow):
         self.setCentralWidget(centralWidget)
     def znzz_onLogin(self):
         if(self.znzz_legal()):
+
             self.close()
             self.main_window = MainWindow()
             self.main_window.show()
@@ -81,9 +82,11 @@ class LoginWindow(QMainWindow):
         znzz_username=self.znzz_user_combo.currentText()
         znzz_password=self.znzz_password_edi.text()
         db=dbconnection.znzz_SQLiteConnection()
+        #TODO 赋值给全局变量
         znzz_login=db.znzz_dblogin(znzz_username,znzz_password)
-        if znzz_login:
+        if znzz_login is not None:
             self.znzz_store_user(znzz_username)
+
         return znzz_login
 
     def znzz_store_user(self, username):

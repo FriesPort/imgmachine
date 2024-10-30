@@ -95,4 +95,7 @@ best="../check/best.pt"
 detection = model.predict(path, img_path, save=True, imgsz=640, line_width=1, show_conf=False)
 i=1
 print(detection)
-judge.ngJudge(path,img_path,best)
+# judge.ngJudge(path,img_path,best)
+img=["./result/83_0_15.jpg","./result/22.bmp"]
+a=db.znzz_searchCountByUser()
+print(a[0])

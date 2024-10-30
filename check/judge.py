@@ -4,10 +4,12 @@ import cv2
 from demo.utils import dbconnection
 
 # 判断是否通过
-def ngJudge(path, imgPath, best):
+def ngJudge(path, imgPath, best, userId):
     model=YOLO(best)
     results = model.predict(source=path, save=True, imgsz=640, line_width=1, show_conf=False)
     Item=[]
+    resultPath=[]
+    total_count = 0  # 初始化总数计数器
     for result in results:
         # 初始化计数器
         count = 0
@@ -43,6 +45,7 @@ def ngJudge(path, imgPath, best):
             type=class_name
             count += 1
             print(f"Detected: {class_name}")  # 打印检测到的类别名称
+        total_count += count  # 累加总数
 
         x = int(new_img.shape[1] * 0.8)
         y = int(new_img.shape[0] * 0.4)
@@ -66,14 +69,17 @@ def ngJudge(path, imgPath, best):
             'detected_part_type': type,
             'result_path': './result/'+file_name
         }
+        resultPath.append('./result/'+file_name)
         Item.append(saveItems)
         cv2.namedWindow("result", cv2.WINDOW_NORMAL)
         cv2.imwrite(save_path + "/" + file_name, new_img)
-        cv2.imshow("result", new_img)
+        #cv2.imshow("result", new_img)
         cv2.waitKey(0)
         cv2.destroyAllWindows()
     db=dbconnection.znzz_SQLiteConnection()
-    db.znzz_saveCheckList(Item)
+    db.znzz_saveCheckList(Item,userId)
+    print(f"Total number of tags detected: {total_count}")
+    return resultPath
 
 
 # # 加载预训练好的YOLOv8模型
