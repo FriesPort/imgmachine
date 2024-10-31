@@ -6,7 +6,7 @@ import yaml
 
 here = osp.dirname(osp.abspath(__file__))
 
-
+#更新目录
 def update_dict(target_dict, new_dict, validate_item=None):
     for key, value in new_dict.items():
         if validate_item:

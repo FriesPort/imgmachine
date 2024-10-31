@@ -7,43 +7,45 @@ from PySide6.QtWidgets import QWidget, QMenu
 import demo.ai
 import demo.utils
 
-CURSOR_DEFAULT = Qt.ArrowCursor
-CURSOR_POINT = Qt.PointingHandCursor
-CURSOR_DRAW = Qt.CrossCursor
-CURSOR_MOVE = Qt.ClosedHandCursor
-CURSOR_GRAB = Qt.OpenHandCursor
-
+# 定义移动速度常量
 MOVE_SPEED = 5.0
 
 class Canvas(QWidget):
+    # 定义信号，用于在缩放、滚动、选择变化和鼠标移动时发出
     zoomRequest = Signal(int, QPoint)
     scrollRequest = Signal(int, int)
     selectionChanged = Signal(list)
     mouseMoved = Signal(QPointF)
 
+    # 定义模式常量：创建和编辑
     CREATE, EDIT = 0, 1
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.mode = self.EDIT
+        # 初始化当前操作对象
         self.current = None
+        # 初始化偏移量
         self.offsets = QPoint(), QPoint()
+        # 初始化缩放比例
         self.scale = 1.0
+        # 初始化图片
         self.pixmap = QPixmap()
+        # 初始化可见性字典
         self.visible = {}
+        # 初始化是否隐藏背景
         self._hideBackround = False
         self.hideBackround = False
+        # 初始化画笔
         self._painter = QPainter()
-        self._cursor = CURSOR_DEFAULT
+        # 初始化右键菜单
         self.menus = QMenu()
+        # 设置鼠标跟踪
         self.setMouseTracking(True)
+        # 设置焦点策略
         self.setFocusPolicy(Qt.WheelFocus)
-        self._ai_model = None
-
-    def drawing(self):
-        return self.mode == self.CREATE
 
     def mouseMoveEvent(self, ev):
+        # 处理鼠标移动事件
         try:
             pos = self.transformPos(ev.position().toPoint())
         except AttributeError:
@@ -53,9 +55,8 @@ class Canvas(QWidget):
         self.prevMovePoint = pos
         self.restoreCursor()
 
-        is_shift_pressed = ev.modifiers() & Qt.ShiftModifier
-
     def paintEvent(self, event):
+        # 处理绘画事件
         if not self.pixmap:
             return super().paintEvent(event)
 
@@ -71,6 +72,7 @@ class Canvas(QWidget):
         p.end()
 
     def mouseReleaseEvent(self, ev):
+        # 处理鼠标释放事件
         if ev.button() == Qt.RightButton:
             menu = self.menus
             self.restoreCursor()
@@ -78,18 +80,20 @@ class Canvas(QWidget):
                 self.repaint()
 
     def setHiding(self, enable=True):
+        # 设置是否隐藏背景
         self._hideBackround = self.hideBackround if enable else False
 
     def transformPos(self, point):
+        # 转换坐标位置
         point_f = QPointF(point)
         scale = self.scale
         offset = self.offsetToCenter()
-        # 将QPointF转换为浮点数进行运算
         transformed_x = (point_f.x() / scale) - offset.x()
         transformed_y = (point_f.y() / scale) - offset.y()
-        # 将结果转换回QPointF
         return QPointF(transformed_x, transformed_y)
+
     def offsetToCenter(self):
+        # 计算偏移量以居中显示图片
         s = self.scale
         area = self.size()
         w, h = self.pixmap.width() * s, self.pixmap.height() * s
@@ -99,18 +103,22 @@ class Canvas(QWidget):
         return QPointF(x, y)
 
     def outOfPixmap(self, p):
+        # 检查点是否在图片外
         w, h = self.pixmap.width(), self.pixmap.height()
         return not (0 <= p.x() <= w - 1 and 0 <= p.y() <= h - 1)
 
     def sizeHint(self):
+        # 返回建议的大小
         return self.minimumSizeHint()
 
     def minimumSizeHint(self):
+        # 返回最小大小
         if self.pixmap:
             return self.scale * self.pixmap.size()
         return super().minimumSizeHint()
 
     def wheelEvent(self, ev):
+        # 处理滚轮事件
         mods = ev.modifiers()
         delta = ev.angleDelta()
         if not mods & Qt.ControlModifier:
@@ -119,23 +127,24 @@ class Canvas(QWidget):
             self.scrollRequest.emit(delta.x(), Qt.Horizontal)
             self.scrollRequest.emit(delta.y(), Qt.Vertical)
         ev.accept()
+
     def loadPixmap(self, pixmap):
+        # 加载图片
         self.pixmap = pixmap
-        if self._ai_model:
-            self._ai_model.set_image(
-                image=demo.utils.img_qt_to_arr(self.pixmap.toImage())
-            )
         self.update()
 
     def overrideCursor(self, cursor):
+        # 覆盖当前光标
         self.restoreCursor()
         self._cursor = cursor
         QtWidgets.QApplication.setOverrideCursor(cursor)
 
     def restoreCursor(self):
+        # 恢复默认光标
         QtWidgets.QApplication.restoreOverrideCursor()
 
     def resetState(self):
+        # 重置状态
         self.restoreCursor()
         self.pixmap = None
         self.update()

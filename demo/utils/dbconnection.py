@@ -10,6 +10,7 @@ class znzz_SQLiteConnection:
      获取日志所需信息：
      id  图片绝对路径  机器检测结果  检测时间(created_time or updated_time)
     """
+    #日志列表
     def znzz_logList(self,path):
         item=[]
         query = 'select * from checklist where result_path=?'

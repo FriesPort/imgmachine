@@ -11,7 +11,7 @@ class ToolBar(QtWidgets.QToolBar):
         layout.setContentsMargins(*m)
         self.setContentsMargins(*m)
         self.setWindowFlags(self.windowFlags() | QtCore.Qt.FramelessWindowHint)
-
+    #为组件添加行为
     def addAction(self, action):
         if isinstance(action, QtWidgets.QWidgetAction):
             return super(ToolBar, self).addAction(action)
