@@ -654,7 +654,6 @@ class MainWindow(QMainWindow):
         best="../check/best.pt"
         if znzz_fileList is not None:
             path = self.preHandleDir #文件夹绝对路径
-            #TODO 添加userID
             path = judge.ngJudge(path, img_path, best,self.userID)
             db=dbconnection.znzz_SQLiteConnection()
             db.znzz_logList(path)
