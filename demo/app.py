@@ -27,11 +27,14 @@ from ultralytics import YOLO
 
 class MainWindow(QMainWindow):
     FIT_WINDOW, FIT_WIDTH, MANUAL_ZOOM = 0, 1, 2
-    def __init__(self, znzz_config=None, znzz_filename=None):
+    def __init__(self, znzz_config=None, znzz_filename=None,znzz_userID=None):
         #初始化构造
         if znzz_config is None:
             znzz_config = get_config()
         self._config = znzz_config
+        self.znzz_userID = None
+        if znzz_userID is not None:
+            self.znzz_userID = znzz_userID
         #加载默认文件
         if znzz_filename is not None and osp.isdir(znzz_filename):
             self.znzz_importDirImages(znzz_filename, load=False)
@@ -77,13 +80,32 @@ class MainWindow(QMainWindow):
         # 日志
         self.znzz_logger = Logger()
         self.znzz_logger.setFixedHeight(150)
+
         # 侧边窗口-员工信息
         self.znzz_employeeMes_list = QListWidget()
+        znzz_employeeLayout = QVBoxLayout()
         self.znzz_employeeMes_dock = QDockWidget(self)
         self.znzz_employeeMes_dock.setFixedHeight(150)
         self.znzz_employeeMes_dock.setObjectName("员工信息")
         self.znzz_employeeMes_dock.setWidget(self.znzz_employeeMes_list)
         self.znzz_employeeMes_dock.setWindowTitle("人员信息")
+        self.znzz_employeeMes_list.setLayout(znzz_employeeLayout)
+
+        emloyeeList = QtWidgets.QListWidget()
+        # 创建水平布局
+        znzz_layout = QHBoxLayout()
+        emloyeeList.setLayout(znzz_layout)
+        self.znzz_employeeText_Label = QtWidgets.QLabel()
+        self.znzz_employeeText_Label.setText("检测员工："+self.znzz_userID)
+        znzz_employeeLayout.addWidget(self.znzz_employeeText_Label)
+
+        emloyeeList = QtWidgets.QListWidget()
+        znzz_layout = QHBoxLayout()
+        emloyeeList.setLayout(znzz_layout)
+        self.znzz_numberText_Label = QtWidgets.QLabel()
+        self.znzz_numberText_Label.setText("检测数量："+self.znzz_updateNumber())
+        znzz_employeeLayout.addWidget(self.znzz_numberText_Label)
+
         # 侧边窗口-文件
         self.znzz_file_dock = QDockWidget(self)
         self.znzz_file_dock.setObjectName("文件")
@@ -225,8 +247,7 @@ class MainWindow(QMainWindow):
         self.imagesNameLst = None
         # 图片绝对路径名
         self.imagesLst = None
-        #检测人
-        self.currentDetector = None
+
         self.otherData = None
         self.zoom_level = 100
         self.zoom_values = {}
@@ -247,9 +268,10 @@ class MainWindow(QMainWindow):
         self.znzz_zoomWidget.setEnabled(False)
         self.znzz_zoomWidget.valueChanged.connect(self.paintCanvas)
         self.znzz_firstOpen_DataList()
+    #应用状态提示
     def status(self, message, delay=2000):
         self.statusBar().showMessage(message, delay)
-
+    #导入图片
     def znzz_importDirImages(self, dirPath, pattern=None, load=True):
         self.actions.znzz_nextImg.setEnabled(True)
         self.actions.znzz_prevImg.setEnabled(True)
@@ -269,7 +291,7 @@ class MainWindow(QMainWindow):
         for znzz_filename in filesName:
             self.znzz_fileList_list.addItem(znzz_filename)
         self.znzz_nextImg()
-
+    #获取所有图片
     def znzz_scanAllImages(self, folderPath):
         extensions = [
             ".%s" % fmt.data().decode().lower()
@@ -287,7 +309,6 @@ class MainWindow(QMainWindow):
         return images
 
     # 人工检测合格
-    #TODO 需要有一个获取当前处理图片的绝对路劲的方法，由于我们处理的图片是标记过后的，不是原图片，考虑是否把标记过后的图片的绝对路径也存储到数据库中
     def znzz_imgqualified(self):
         self.znzz_nextImg()
         # 假设此处可以获取当前正在处理的图像的绝对路径
@@ -297,7 +318,8 @@ class MainWindow(QMainWindow):
         index = self.znzz_fileList_list.currentRow()
         #self.znzz_updateDataList(current_image_path)
         self.znzz_updateDataList(self.imagesNameLst[index])
-        self.znzz_logger.add_log(self.currentDetector, self.imagesNameLst[index],"OK")
+        self.znzz_logger.add_log(self.znzz_userID, self.imagesNameLst[index],"OK")
+        self.znzz_numberText_Label.setText("检测数量："+self.znzz_updateNumber())
         self.status("检测结果为正确，已存储")
     #不合格
     def znzz_imgunqualified(self):
@@ -309,27 +331,35 @@ class MainWindow(QMainWindow):
         index = self.znzz_fileList_list.currentRow()
         # self.znzz_updateDataList(current_image_path)
         self.znzz_updateDataList(self.imagesNameLst[index])
-        self.znzz_logger.add_log(self.currentDetector, self.imagesNameLst[index], "NG")
+        self.znzz_logger.add_log(self.znzz_userID, self.imagesNameLst[index], "NG")
+        self.znzz_numberText_Label.setText("检测数量："+self.znzz_updateNumber())
         self.status("检测结果为错误")
-
+    #下一张
     def znzz_nextImg(self):
         self.znzz_selectImg(next=True)
-
+    #上一张
     def znzz_prevImg(self):
         self.znzz_selectImg(prev=True)
-
+    #更新检测数量
+    def znzz_updateNumber(self):
+        db=dbconnection.znzz_SQLiteConnection()
+        number = db.znzz_searchCountByUser(self.znzz_userID)[0]
+        return ''.join(str(number))
+    #第一次打开应用时将数据库资源导入
     def znzz_firstOpen_DataList(self):
         db = dbconnection.znzz_SQLiteConnection()
         self.dataList = db.znzz_List()
         for item in self.dataList:
             self.znzz_dataShow_List.addItem(str(item[0]))
         self.znzz_dataShow_List.scrollToBottom()
+    #更新数据库栏信息
     def znzz_updateDataList(self,current_image_path):
+        print(current_image_path)
         self.dataList.append(current_image_path)
-        relativePath = r'./result/'.join(current_image_path)
+        relativePath = r'./result/'+current_image_path
         self.znzz_dataShow_List.addItem(relativePath)
         self.znzz_dataShow_List.scrollToBottom()
-
+    #加载图片的中间层方法
     def znzz_selectImg(self, load=True, next=False, prev=False):
         lst = self.imageList()
         if len(lst) <= 0:
@@ -354,6 +384,7 @@ class MainWindow(QMainWindow):
                 return
         if self.znzz_filename and load:
             self.loadFile(self.znzz_filename)
+    #选择图片事件
     def fileSelectionChanged(self):
         items = self.znzz_fileList_list.selectedItems()
         if not items:
@@ -368,7 +399,7 @@ class MainWindow(QMainWindow):
             if znzz_filename:
                 self.loadFile(znzz_filename)
 
-
+    #滚动栏请求
     def scrollRequese(self, delta, orientation):
         units = -delta * 0.1
         if not orientation:
@@ -376,11 +407,11 @@ class MainWindow(QMainWindow):
         bar = self.znzz_scrollBars[orientation]
         value = bar.value() + bar.singleStep() * units
         self.setScroll(orientation, value)
-
+    #滚动设置
     def setScroll(self, orientation, value):
         self.znzz_scrollBars[orientation].setValue(int(value))
         self.scroll_values[orientation][self.znzz_filename] = value
-
+    #缩放请求
     def zoomRequest(self, delta, pos):
         canvas_width_old = self.znzz_canvas.width()
         units = 1.1
@@ -403,12 +434,12 @@ class MainWindow(QMainWindow):
                 Qt.Vertical,
                 self.znzz_scrollBars[Qt.Vertical].value() + y_shift,
             )
-
+    #设置缩放
     def setZoom(self, value):
         self.zoomMode = self.MANUAL_ZOOM
         self.znzz_zoomWidget.setValue(value)
         self.zoom_values[self.znzz_filename] = (self.zoomMode, value)
-
+    #添加缩放值
     def addZoom(self, increment=1.1):
         zoom_value = self.znzz_zoomWidget.value() * increment
         if increment > 1:
@@ -416,7 +447,7 @@ class MainWindow(QMainWindow):
         else:
             zoom_value = math.floor(zoom_value)
         self.setZoom(zoom_value)
-
+    #画布复位
     def resetState(self):
         self.znzz_filename = None
 
@@ -425,7 +456,7 @@ class MainWindow(QMainWindow):
         self.labelFile = None
         self.otherData = None
         self.znzz_canvas.resetState()
-
+    #加载文件
     def loadFile(self, znzz_filename=None):
         if znzz_filename in self.imageList() and (
                 self.znzz_fileList_list.currentRow() != self.imageList().index(znzz_filename)
@@ -491,7 +522,7 @@ class MainWindow(QMainWindow):
         self.znzz_canvas.setFocus()
         self.status("加载成功 %s" % osp.basename(str(znzz_filename)))
         return True
-
+    #加载图片
     def load_image_file(self, znzz_filename):
         try:
             image_pil = PIL.Image.open(znzz_filename)
@@ -511,20 +542,20 @@ class MainWindow(QMainWindow):
             image_pil.save(f, format=format)
             f.seek(0)
             return f.read()
-
+    #图片列表
     def imageList(self):
         lst = []
         for i in range(self.znzz_fileList_list.count()):
             item = self.znzz_fileList_list.item(i)
             lst.append(item.text())
         return lst
-
+    #将图片加载到画布
     def paintCanvas(self):
         assert not self.image.isNull(), "无法显示该图像"
         self.znzz_canvas.scale = 0.01 * self.znzz_zoomWidget.value()
         self.znzz_canvas.adjustSize()
         self.znzz_canvas.update()
-
+    #打开文件事件
     def openFile(self, _value=False):
         # if not self.mayContinue():
         #     return
@@ -546,6 +577,7 @@ class MainWindow(QMainWindow):
             znzz_filename = fileDialog.selectedFiles()[0]
             if znzz_filename:
                 self.loadFile(znzz_filename)
+
     def znzz_dirBar(self):
         if self.lastOpenDir and osp.exists(self.lastOpenDir):
             defaultOpenDir = self.lastOpenDir
@@ -561,10 +593,12 @@ class MainWindow(QMainWindow):
             )
         )
         return targetDirPath
+    #打开文件夹
     def opendir(self):
         targetDirPath = self.znzz_dirBar()
         self.opendDir = targetDirPath
         self.znzz_importDirImages(targetDirPath)
+    #选择预处理文件夹
     def znzz_choosePreHandleDir(self):
         targetDirPath = self.znzz_dirBar()
         self.preHandleDir = targetDirPath
@@ -572,6 +606,7 @@ class MainWindow(QMainWindow):
             self.status("所选文件夹无效")
             return
         self.AppController()
+    #退出事件
     def znzz_quit(self):
         # 创建一个 QMessageBox 对象，设置为警告类型
         reply = QMessageBox.question(self, '退出',
@@ -585,18 +620,19 @@ class MainWindow(QMainWindow):
             self.close()
         else:
             return
+    #菜单
     def znzz_menu(self, title, actions=None):
         znzz_menu = self.menuBar().addMenu(title)
         if actions:
             utils.addActions(znzz_menu, actions)
         return znzz_menu
-
+    #搜索文件
     def fileSearch(self):
         text = self.znzz_fileSearch_lineEdit.text()
         self.znzz_importDirImages(self.lastOpenDir, pattern=text, load=False)
 
 
-
+    #错误信息函数
     def errorMessage(self, title, message):
         return QtWidgets.QMessageBox.critical(
             self, title, "<p><b>%s</b></p>%s" % (title, message)
@@ -607,16 +643,10 @@ class MainWindow(QMainWindow):
         self.znzz_canvas.update()
         preHandleDir = self.preHandleDir
         znzz_filepath_list=self.znzz_scanAllImages(preHandleDir)
-        print(znzz_filepath_list)
         return znzz_filepath_list
 
     #按钮：检测
     #把获取的路径发送给算法模块，然后拿到检测结果
-    #是否连同图片一起接收？
-    '''
-    我们获取图片路径是由qt视图所控制的，
-    那么其他函数需要获取到的路径应该重新调函数还是访问控件中的信息？
-    '''
     def AppController(self):
         self.znzz_createTable()
         znzz_fileList=self.znzz_getFilePath() #选定文件夹下的所有图片
@@ -624,7 +654,8 @@ class MainWindow(QMainWindow):
         best="../check/best.pt"
         if znzz_fileList is not None:
             path = self.preHandleDir #文件夹绝对路径
-            path = judge.ngJudge(path, img_path, best)
+            #TODO 添加userID
+            path = judge.ngJudge(path, img_path, best,self.userID)
             db=dbconnection.znzz_SQLiteConnection()
             db.znzz_logList(path)
         elif znzz_fileList is None:
@@ -656,6 +687,7 @@ class MainWindow(QMainWindow):
                 cursor.execute(znzz_create_table_sql)
                 db.commit()
                 cursor.close()
+    #工具栏
     def toolbar(self, title, actions=None,vertical=None):
         # 创建一个新的工具栏对象，title 参数是工具栏的标题。
         toolbar = ToolBar(title)

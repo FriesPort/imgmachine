@@ -15,7 +15,7 @@ class LoginWindow(QMainWindow):
 
         config=get_config()
         self.config=config
-
+        self.znzz_userID = None
         self.resize(350, 450)
         self.znzz_statusLabel = QLabel()
         self.znzz_statusLabel.setStyleSheet("QLabel { color : red; font-size: 14px; }")
@@ -72,7 +72,7 @@ class LoginWindow(QMainWindow):
         if(self.znzz_legal()):
 
             self.close()
-            self.main_window = MainWindow()
+            self.main_window = MainWindow(znzz_userID=self.znzz_userID)
             self.main_window.show()
         else:
             self.znzz_statusLabel.setText("登录失败：用户名或密码错误")
@@ -82,11 +82,10 @@ class LoginWindow(QMainWindow):
         znzz_username=self.znzz_user_combo.currentText()
         znzz_password=self.znzz_password_edi.text()
         db=dbconnection.znzz_SQLiteConnection()
-        #TODO 赋值给全局变量
         znzz_login=db.znzz_dblogin(znzz_username,znzz_password)
         if znzz_login is not None:
+            self.znzz_userID = znzz_username
             self.znzz_store_user(znzz_username)
-
         return znzz_login
 
     def znzz_store_user(self, username):

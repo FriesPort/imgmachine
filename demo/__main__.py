@@ -4,7 +4,7 @@ from app import MainWindow
 from login import LoginWindow
 from PySide6 import QtCore, QtWidgets
 
-
+global userID
 def main():
     logIn=QtWidgets.QApplication(sys.argv)
     logIn.setApplicationName('登录')

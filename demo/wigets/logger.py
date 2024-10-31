@@ -13,7 +13,7 @@ class Logger(QtWidgets.QDialog):
         self.table_widget = QtWidgets.QTableWidget(self)
         self.table_widget.setRowCount(0)
         self.table_widget.setColumnCount(4)
-        self.table_widget.setHorizontalHeaderLabels(["检测人", "图片路径", "状态", "时间"])
+        self.table_widget.setHorizontalHeaderLabels(["检测人", "图片路径", "算法检测状态", "时间"])
         self.table_widget.setEditTriggers(QtWidgets.QTableWidget.NoEditTriggers)
         self.table_widget.setAlternatingRowColors(True)
 

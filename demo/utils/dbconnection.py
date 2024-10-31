@@ -89,7 +89,7 @@ class znzz_SQLiteConnection:
                 db.commit()
             cursor.execute("SELECT id FROM user where username=? and password=?", (znzz_username,znzz_password))
             user=cursor.fetchone()
-            if cursor.fetchone():
+            if user:
                 cursor.close()
                 return user[0]
             else:
@@ -137,7 +137,6 @@ class znzz_SQLiteConnection:
             query ="select * from user where login_status=1"
             cursor.execute(query)
             results = cursor.fetchone()
-        print(results)
         return results
 
     #机器检测结果存储
